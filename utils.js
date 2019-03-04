@@ -1,18 +1,20 @@
-"use strict";
+'use strict';
 
-var bluebird = require("bluebird");
-var request = bluebird.promisify(require("request").defaults({ jar: true }));
-var stream = require("stream");
-var log = require("npmlog");
+var util = require('util');
+var request = util.promisify(require('request')
+  .defaults({ jar: true }));
+var stream = require('stream');
+var log = require('npmlog');
 
 function getHeaders(url, options) {
   var headers = {
-    "Content-Type": "application/x-www-form-urlencoded",
-    Referer: "https://www.facebook.com/",
-    Host: url.replace("https://", "").split("/")[0],
-    Origin: "https://www.facebook.com",
-    "User-Agent": options.userAgent,
-    Connection: "keep-alive"
+    'Content-Type': 'application/x-www-form-urlencoded',
+    Referer: 'https://www.facebook.com/',
+    Host: url.replace('https://', '')
+      .split('/')[0],
+    Origin: 'https://www.facebook.com',
+    'User-Agent': options.userAgent,
+    Connection: 'keep-alive'
   };
 
   return headers;
@@ -21,17 +23,17 @@ function getHeaders(url, options) {
 function isReadableStream(obj) {
   return (
     obj instanceof stream.Stream &&
-    (getType(obj._read) === "Function" ||
-      getType(obj._read) === "AsyncFunction") &&
-    getType(obj._readableState) === "Object"
+    (getType(obj._read) === 'Function' ||
+      getType(obj._read) === 'AsyncFunction') &&
+    getType(obj._readableState) === 'Object'
   );
 }
 
 function get(url, jar, qs, options) {
   // I'm still confused about this
-  if (getType(qs) === "Object") {
+  if (getType(qs) === 'Object') {
     for (var prop in qs) {
-      if (qs.hasOwnProperty(prop) && getType(qs[prop]) === "Object") {
+      if (qs.hasOwnProperty(prop) && getType(qs[prop]) === 'Object') {
         qs[prop] = JSON.stringify(qs[prop]);
       }
     }
@@ -41,14 +43,15 @@ function get(url, jar, qs, options) {
     timeout: 60000,
     qs: qs,
     url: url,
-    method: "GET",
+    method: 'GET',
     jar: jar,
     gzip: true
   };
 
-  return request(op).then(function(res) {
-    return res[0];
-  });
+  return request(op)
+    .then(function (res) {
+      return res[0];
+    });
 }
 
 function post(url, jar, form, options) {
@@ -56,40 +59,44 @@ function post(url, jar, form, options) {
     headers: getHeaders(url, options),
     timeout: 60000,
     url: url,
-    method: "POST",
+    method: 'POST',
     form: form,
     jar: jar,
     gzip: true
   };
 
-  return request(op).then(function(res) {
-    return res[0];
-  });
+  return request(op)
+    .then(function (res) {
+      return res[0];
+    });
 }
 
 function postFormData(url, jar, form, qs, options) {
   var headers = getHeaders(url, options);
-  headers["Content-Type"] = "multipart/form-data";
+  headers['Content-Type'] = 'multipart/form-data';
   var op = {
     headers: headers,
     timeout: 60000,
     url: url,
-    method: "POST",
+    method: 'POST',
     formData: form,
     qs: qs,
     jar: jar,
     gzip: true
   };
 
-  return request(op).then(function(res) {
-    return res[0];
-  });
+  return request(op)
+    .then(function (res) {
+      return res[0];
+    });
 }
 
 function padZeros(val, len) {
   val = String(val);
   len = len || 2;
-  while (val.length < len) val = "0" + val;
+  while (val.length < len) {
+    val = '0' + val;
+  }
   return val;
 }
 
@@ -97,26 +104,26 @@ function generateThreadingID(clientID) {
   var k = Date.now();
   var l = Math.floor(Math.random() * 4294967295);
   var m = clientID;
-  return "<" + k + ":" + l + "-" + m + "@mail.projektitan.com>";
+  return '<' + k + ':' + l + '-' + m + '@mail.projektitan.com>';
 }
 
 function binaryToDecimal(data) {
-  var ret = "";
-  while (data !== "0") {
+  var ret = '';
+  while (data !== '0') {
     var end = 0;
-    var fullName = "";
+    var fullName = '';
     var i = 0;
     for (; i < data.length; i++) {
       end = 2 * end + parseInt(data[i], 10);
       if (end >= 10) {
-        fullName += "1";
+        fullName += '1';
         end -= 10;
       } else {
-        fullName += "0";
+        fullName += '0';
       }
     }
     ret = end.toString() + ret;
-    data = fullName.slice(fullName.indexOf("1"));
+    data = fullName.slice(fullName.indexOf('1'));
   }
   return ret;
 }
@@ -124,7 +131,7 @@ function binaryToDecimal(data) {
 function generateOfflineThreadingID() {
   var ret = Date.now();
   var value = Math.floor(Math.random() * 4294967295);
-  var str = ("0000000000000000000000" + value.toString(2)).slice(-22);
+  var str = ('0000000000000000000000' + value.toString(2)).slice(-22);
   var msgs = ret.toString(2) + str;
   return binaryToDecimal(msgs);
 }
@@ -132,60 +139,61 @@ function generateOfflineThreadingID() {
 var h;
 var i = {};
 var j = {
-  _: "%",
-  A: "%2",
-  B: "000",
-  C: "%7d",
-  D: "%7b%22",
-  E: "%2c%22",
-  F: "%22%3a",
-  G: "%2c%22ut%22%3a1",
-  H: "%2c%22bls%22%3a",
-  I: "%2c%22n%22%3a%22%",
-  J: "%22%3a%7b%22i%22%3a0%7d",
-  K: "%2c%22pt%22%3a0%2c%22vis%22%3a",
-  L: "%2c%22ch%22%3a%7b%22h%22%3a%22",
-  M: "%7b%22v%22%3a2%2c%22time%22%3a1",
-  N: ".channel%22%2c%22sub%22%3a%5b",
-  O: "%2c%22sb%22%3a1%2c%22t%22%3a%5b",
-  P: "%2c%22ud%22%3a100%2c%22lc%22%3a0",
-  Q: "%5d%2c%22f%22%3anull%2c%22uct%22%3a",
-  R: ".channel%22%2c%22sub%22%3a%5b1%5d",
-  S: "%22%2c%22m%22%3a0%7d%2c%7b%22i%22%3a",
-  T: "%2c%22blc%22%3a1%2c%22snd%22%3a1%2c%22ct%22%3a",
-  U: "%2c%22blc%22%3a0%2c%22snd%22%3a1%2c%22ct%22%3a",
-  V: "%2c%22blc%22%3a0%2c%22snd%22%3a0%2c%22ct%22%3a",
-  W: "%2c%22s%22%3a0%2c%22blo%22%3a0%7d%2c%22bl%22%3a%7b%22ac%22%3a",
-  X: "%2c%22ri%22%3a0%7d%2c%22state%22%3a%7b%22p%22%3a0%2c%22ut%22%3a1",
+  _: '%',
+  A: '%2',
+  B: '000',
+  C: '%7d',
+  D: '%7b%22',
+  E: '%2c%22',
+  F: '%22%3a',
+  G: '%2c%22ut%22%3a1',
+  H: '%2c%22bls%22%3a',
+  I: '%2c%22n%22%3a%22%',
+  J: '%22%3a%7b%22i%22%3a0%7d',
+  K: '%2c%22pt%22%3a0%2c%22vis%22%3a',
+  L: '%2c%22ch%22%3a%7b%22h%22%3a%22',
+  M: '%7b%22v%22%3a2%2c%22time%22%3a1',
+  N: '.channel%22%2c%22sub%22%3a%5b',
+  O: '%2c%22sb%22%3a1%2c%22t%22%3a%5b',
+  P: '%2c%22ud%22%3a100%2c%22lc%22%3a0',
+  Q: '%5d%2c%22f%22%3anull%2c%22uct%22%3a',
+  R: '.channel%22%2c%22sub%22%3a%5b1%5d',
+  S: '%22%2c%22m%22%3a0%7d%2c%7b%22i%22%3a',
+  T: '%2c%22blc%22%3a1%2c%22snd%22%3a1%2c%22ct%22%3a',
+  U: '%2c%22blc%22%3a0%2c%22snd%22%3a1%2c%22ct%22%3a',
+  V: '%2c%22blc%22%3a0%2c%22snd%22%3a0%2c%22ct%22%3a',
+  W: '%2c%22s%22%3a0%2c%22blo%22%3a0%7d%2c%22bl%22%3a%7b%22ac%22%3a',
+  X: '%2c%22ri%22%3a0%7d%2c%22state%22%3a%7b%22p%22%3a0%2c%22ut%22%3a1',
   Y:
-    "%2c%22pt%22%3a0%2c%22vis%22%3a1%2c%22bls%22%3a0%2c%22blc%22%3a0%2c%22snd%22%3a1%2c%22ct%22%3a",
+    '%2c%22pt%22%3a0%2c%22vis%22%3a1%2c%22bls%22%3a0%2c%22blc%22%3a0%2c%22snd%22%3a1%2c%22ct%22%3a',
   Z:
-    "%2c%22sb%22%3a1%2c%22t%22%3a%5b%5d%2c%22f%22%3anull%2c%22uct%22%3a0%2c%22s%22%3a0%2c%22blo%22%3a0%7d%2c%22bl%22%3a%7b%22ac%22%3a"
+    '%2c%22sb%22%3a1%2c%22t%22%3a%5b%5d%2c%22f%22%3anull%2c%22uct%22%3a0%2c%22s%22%3a0%2c%22blo%22%3a0%7d%2c%22bl%22%3a%7b%22ac%22%3a'
 };
-(function() {
+(function () {
   var l = [];
   for (var m in j) {
     i[j[m]] = m;
     l.push(j[m]);
   }
   l.reverse();
-  h = new RegExp(l.join("|"), "g");
+  h = new RegExp(l.join('|'), 'g');
 })();
 
 function presenceEncode(str) {
   return encodeURIComponent(str)
-    .replace(/([_A-Z])|%../g, function(m, n) {
-      return n ? "%" + n.charCodeAt(0).toString(16) : m;
+    .replace(/([_A-Z])|%../g, function (m, n) {
+      return n ? '%' + n.charCodeAt(0)
+        .toString(16) : m;
     })
     .toLowerCase()
-    .replace(h, function(m) {
+    .replace(h, function (m) {
       return i[m];
     });
 }
 
 function presenceDecode(str) {
   return decodeURIComponent(
-    str.replace(/[_A-Z]/g, function(m) {
+    str.replace(/[_A-Z]/g, function (m) {
       return j[m];
     })
   );
@@ -194,7 +202,7 @@ function presenceDecode(str) {
 function generatePresence(userID) {
   var time = Date.now();
   return (
-    "E" +
+    'E' +
     presenceEncode(
       JSON.stringify({
         v: 3,
@@ -210,7 +218,7 @@ function generatePresence(userID) {
           at: time
         },
         ch: {
-          ["p_" + userID]: 0
+          ['p_' + userID]: 0
         }
       })
     )
@@ -222,13 +230,13 @@ function generateAccessiblityCookie() {
   return encodeURIComponent(
     JSON.stringify({
       sr: 0,
-      "sr-ts": time,
+      'sr-ts': time,
       jk: 0,
-      "jk-ts": time,
+      'jk-ts': time,
       kb: 0,
-      "kb-ts": time,
+      'kb-ts': time,
       hcm: 0,
-      "hcm-ts": time
+      'hcm-ts': time
     })
   );
 }
@@ -237,13 +245,13 @@ function getGUID() {
   /** @type {number} */
   var sectionLength = Date.now();
   /** @type {string} */
-  var id = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+  var id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     /** @type {number} */
     var r = Math.floor((sectionLength + Math.random() * 16) % 16);
     /** @type {number} */
     sectionLength = Math.floor(sectionLength / 16);
     /** @type {string} */
-    var _guid = (c == "x" ? r : (r & 7) | 8).toString(16);
+    var _guid = (c == 'x' ? r : (r & 7) | 8).toString(16);
     return _guid;
   });
   return id;
@@ -256,24 +264,24 @@ function _formatAttachment(attachment1, attachment2) {
   // data that you'd want so we merge them for convenience.
   // Instead of having a bunch of if statements guarding every access to image_data,
   // we set it to empty object and use the fact that it'll return undefined.
-  attachment2 = attachment2 || { id: "", image_data: {} };
+  attachment2 = attachment2 || { id: '', image_data: {} };
   attachment1 = attachment1.mercury ? attachment1.mercury : attachment1;
   var blob = attachment1.blob_attachment;
   var type =
     blob && blob.__typename ? blob.__typename : attachment1.attach_type;
   if (!type && attachment1.sticker_attachment) {
-    type = "StickerAttachment";
+    type = 'StickerAttachment';
     blob = attachment1.sticker_attachment;
   } else if (!type && attachment1.extensible_attachment) {
-    type = "ExtensibleAttachment";
+    type = 'ExtensibleAttachment';
     blob = attachment1.extensible_attachment;
   }
   // TODO: Determine whether "sticker", "photo", "file" etc are still used
   // KEEP IN SYNC WITH getThreadHistory
   switch (type) {
-    case "sticker":
+    case 'sticker':
       return {
-        type: "sticker",
+        type: 'sticker',
         ID: attachment1.metadata.stickerID.toString(),
         url: attachment1.url,
 
@@ -295,9 +303,9 @@ function _formatAttachment(attachment1, attachment2) {
         spriteURI: attachment1.metadata.spriteURI, // @Legacy
         spriteURI2x: attachment1.metadata.spriteURI2x // @Legacy
       };
-    case "file":
+    case 'file':
       return {
-        type: "file",
+        type: 'file',
         filename: attachment1.name,
         ID: attachment2.id.toString(),
         url: attachment1.url,
@@ -309,9 +317,9 @@ function _formatAttachment(attachment1, attachment2) {
         mimeType: attachment2.mime_type, // @Legacy
         fileSize: attachment2.file_size // @Legacy
       };
-    case "photo":
+    case 'photo':
       return {
-        type: "photo",
+        type: 'photo',
         ID: attachment1.metadata.fbid.toString(),
         filename: attachment1.fileName,
         thumbnailUrl: attachment1.thumbnail_url,
@@ -325,13 +333,13 @@ function _formatAttachment(attachment1, attachment2) {
         largePreviewHeight: attachment1.large_preview_height,
 
         url: attachment1.metadata.url, // @Legacy
-        width: attachment1.metadata.dimensions.split(",")[0], // @Legacy
-        height: attachment1.metadata.dimensions.split(",")[1], // @Legacy
+        width: attachment1.metadata.dimensions.split(',')[0], // @Legacy
+        height: attachment1.metadata.dimensions.split(',')[1], // @Legacy
         name: attachment1.fileName // @Legacy
       };
-    case "animated_image":
+    case 'animated_image':
       return {
-        type: "animated_image",
+        type: 'animated_image',
         ID: attachment2.id.toString(),
         filename: attachment2.filename,
 
@@ -354,9 +362,9 @@ function _formatAttachment(attachment1, attachment2) {
         animatedWebpUrl: attachment2.image_data.animated_webp_url, // @Legacy
         animatedWebpPreviewUrl: attachment2.image_data.animated_webp_preview_url // @Legacy
       };
-    case "share":
+    case 'share':
       return {
-        type: "share",
+        type: 'share',
         ID: attachment1.share.share_id.toString(),
         url: attachment2.href,
 
@@ -378,9 +386,9 @@ function _formatAttachment(attachment1, attachment2) {
         target: attachment1.share.target, // @Legacy
         styleList: attachment1.share.style_list // @Legacy
       };
-    case "video":
+    case 'video':
       return {
-        type: "video",
+        type: 'video',
         ID: attachment1.metadata.fbid.toString(),
         filename: attachment1.name,
 
@@ -393,22 +401,22 @@ function _formatAttachment(attachment1, attachment2) {
         height: attachment1.metadata.dimensions.height,
 
         duration: attachment1.metadata.duration,
-        videoType: "unknown",
+        videoType: 'unknown',
 
         thumbnailUrl: attachment1.thumbnail_url // @Legacy
       };
-    case "error":
+    case 'error':
       return {
-        type: "error",
+        type: 'error',
 
         // Save error attachments because we're unsure of their format,
         // and whether there are cases they contain something useful for debugging.
         attachment1: attachment1,
         attachment2: attachment2
       };
-    case "MessageImage":
+    case 'MessageImage':
       return {
-        type: "photo",
+        type: 'photo',
         ID: blob.legacy_attachment_id,
         filename: blob.filename,
         thumbnailUrl: blob.thumbnail.uri,
@@ -426,9 +434,9 @@ function _formatAttachment(attachment1, attachment2) {
         height: blob.original_dimensions.y, // @Legacy
         name: blob.filename // @Legacy
       };
-    case "MessageAnimatedImage":
+    case 'MessageAnimatedImage':
       return {
-        type: "animated_image",
+        type: 'animated_image',
         ID: blob.legacy_attachment_id,
         filename: blob.filename,
 
@@ -449,9 +457,9 @@ function _formatAttachment(attachment1, attachment2) {
         animatedWebpUrl: blob.animated_image.uri, // @Legacy
         animatedWebpPreviewUrl: blob.preview_image.uri // @Legacy
       };
-    case "MessageVideo":
+    case 'MessageVideo':
       return {
-        type: "video",
+        type: 'video',
         filename: blob.filename,
         ID: blob.legacy_attachment_id,
 
@@ -468,9 +476,9 @@ function _formatAttachment(attachment1, attachment2) {
 
         thumbnailUrl: blob.large_image.uri // @Legacy
       };
-    case "MessageAudio":
+    case 'MessageAudio':
       return {
-        type: "audio",
+        type: 'audio',
         filename: blob.filename,
         ID: blob.url_shimhash,
 
@@ -480,9 +488,9 @@ function _formatAttachment(attachment1, attachment2) {
 
         isVoiceMail: blob.is_voicemail
       };
-    case "StickerAttachment":
+    case 'StickerAttachment':
       return {
-        type: "sticker",
+        type: 'sticker',
         ID: blob.id,
         url: blob.url,
 
@@ -504,9 +512,9 @@ function _formatAttachment(attachment1, attachment2) {
         spriteURI: blob.sprite_image, // @Legacy
         spriteURI2x: blob.sprite_image_2x // @Legacy
       };
-    case "ExtensibleAttachment":
+    case 'ExtensibleAttachment':
       return {
-        type: "share",
+        type: 'share',
         ID: blob.legacy_attachment_id,
         url: blob.story_attachment.url,
 
@@ -542,7 +550,7 @@ function _formatAttachment(attachment1, attachment2) {
             : blob.story_attachment.media.playable_url,
 
         subattachments: blob.story_attachment.subattachments,
-        properties: blob.story_attachment.properties.reduce(function(obj, cur) {
+        properties: blob.story_attachment.properties.reduce(function (obj, cur) {
           obj[cur.key] = cur.value.text;
           return obj;
         }, {}),
@@ -551,9 +559,9 @@ function _formatAttachment(attachment1, attachment2) {
         target: blob.story_attachment.target, // @Legacy
         styleList: blob.story_attachment.style_list // @Legacy
       };
-    case "MessageFile":
+    case 'MessageFile':
       return {
-        type: "file",
+        type: 'file',
         filename: blob.filename,
         ID: blob.message_file_fbid,
 
@@ -562,18 +570,18 @@ function _formatAttachment(attachment1, attachment2) {
         contentType: blob.content_type,
 
         name: blob.filename,
-        mimeType: "",
+        mimeType: '',
         fileSize: -1
       };
     default:
       throw new Error(
-        "unrecognized attach_file of type " +
-          type +
-          "`" +
-          JSON.stringify(attachment1, null, 4) +
-          " attachment2: " +
-          JSON.stringify(attachment2, null, 4) +
-          "`"
+        'unrecognized attach_file of type ' +
+        type +
+        '`' +
+        JSON.stringify(attachment1, null, 4) +
+        ' attachment2: ' +
+        JSON.stringify(attachment2, null, 4) +
+        '`'
       );
   }
 }
@@ -581,16 +589,16 @@ function _formatAttachment(attachment1, attachment2) {
 function formatAttachment(attachments, attachmentIds, attachmentMap, shareMap) {
   attachmentMap = shareMap || attachmentMap;
   return attachments
-    ? attachments.map(function(val, i) {
-        if (
-          !attachmentMap ||
-          !attachmentIds ||
-          !attachmentMap[attachmentIds[i]]
-        ) {
-          return _formatAttachment(val);
-        }
-        return _formatAttachment(val, attachmentMap[attachmentIds[i]]);
-      })
+    ? attachments.map(function (val, i) {
+      if (
+        !attachmentMap ||
+        !attachmentIds ||
+        !attachmentMap[attachmentIds[i]]
+      ) {
+        return _formatAttachment(val);
+      }
+      return _formatAttachment(val, attachmentMap[attachmentIds[i]]);
+    })
     : [];
 }
 
@@ -601,8 +609,8 @@ function formatDeltaMessage(m) {
     m.delta.data === undefined
       ? []
       : m.delta.data.prng === undefined
-        ? []
-        : JSON.parse(m.delta.data.prng);
+      ? []
+      : JSON.parse(m.delta.data.prng);
   var m_id = mdata.map(u => u.i);
   var m_offset = mdata.map(u => u.o);
   var m_length = mdata.map(u => u.l);
@@ -615,9 +623,9 @@ function formatDeltaMessage(m) {
   }
 
   return {
-    type: "message",
+    type: 'message',
     senderID: formatID(md.actorFbId.toString()),
-    body: m.delta.body || "",
+    body: m.delta.body || '',
     threadID: formatID(
       (md.threadKey.threadFbId || md.threadKey.otherUserFbId).toString()
     ),
@@ -631,7 +639,7 @@ function formatDeltaMessage(m) {
 
 function formatID(id) {
   if (id != undefined && id != null) {
-    return id.replace(/(fb)?id[:.]/, "");
+    return id.replace(/(fb)?id[:.]/, '');
   } else {
     return id;
   }
@@ -640,18 +648,18 @@ function formatID(id) {
 function formatMessage(m) {
   var originalMessage = m.message ? m.message : m;
   var obj = {
-    type: "message",
+    type: 'message',
     senderName: originalMessage.sender_name,
     senderID: formatID(originalMessage.sender_fbid.toString()),
     participantNames: originalMessage.group_thread_info
       ? originalMessage.group_thread_info.participant_names
-      : [originalMessage.sender_name.split(" ")[0]],
+      : [originalMessage.sender_name.split(' ')[0]],
     participantIDs: originalMessage.group_thread_info
-      ? originalMessage.group_thread_info.participant_ids.map(function(v) {
-          return formatID(v.toString());
-        })
+      ? originalMessage.group_thread_info.participant_ids.map(function (v) {
+        return formatID(v.toString());
+      })
       : [formatID(originalMessage.sender_fbid)],
-    body: originalMessage.body || "",
+    body: originalMessage.body || '',
     threadID: formatID(
       (
         originalMessage.thread_fbid || originalMessage.other_user_fbid
@@ -679,8 +687,9 @@ function formatMessage(m) {
     isUnread: originalMessage.is_unread
   };
 
-  if (m.type === "pages_messaging")
+  if (m.type === 'pages_messaging') {
     obj.pageID = m.realtime_viewer_fbid.toString();
+  }
   obj.isGroup = obj.participantIDs.length > 2;
 
   return obj;
@@ -690,7 +699,7 @@ function formatEvent(m) {
   var originalMessage = m.message ? m.message : m;
   var logMessageType = originalMessage.log_message_type;
   var logMessageData;
-  if (logMessageType === "log:generic-admin-text") {
+  if (logMessageType === 'log:generic-admin-text') {
     logMessageData = originalMessage.log_message_data.untypedData;
     logMessageType = getAdminTextMessageType(
       originalMessage.log_message_data.message_type
@@ -700,7 +709,7 @@ function formatEvent(m) {
   }
 
   return Object.assign(formatMessage(originalMessage), {
-    type: "event",
+    type: 'event',
     logMessageType: logMessageType,
     logMessageData: logMessageData,
     logMessageBody: originalMessage.log_message_body
@@ -709,7 +718,7 @@ function formatEvent(m) {
 
 function formatHistoryMessage(m) {
   switch (m.action_type) {
-    case "ma-type:log-message":
+    case 'ma-type:log-message':
       return formatEvent(m);
     default:
       return formatMessage(m);
@@ -719,12 +728,12 @@ function formatHistoryMessage(m) {
 // Get a more readable message type for AdminTextMessages
 function getAdminTextMessageType(type) {
   switch (type) {
-    case "change_thread_theme":
-      return "log:thread-color";
-    case "change_thread_nickname":
-      return "log:user-nickname";
-    case "change_thread_icon":
-      return "log:thread-icon";
+    case 'change_thread_theme':
+      return 'log:thread-color';
+    case 'change_thread_nickname':
+      return 'log:user-nickname';
+    case 'change_thread_icon':
+      return 'log:thread-icon';
     default:
       return type;
   }
@@ -742,26 +751,26 @@ function formatDeltaEvent(m) {
   // log:unsubscribe => {leftParticipantFbId}
 
   switch (m.class) {
-    case "AdminTextMessage":
+    case 'AdminTextMessage':
       logMessageData = m.untypedData;
       logMessageType = getAdminTextMessageType(m.type);
       break;
-    case "ThreadName":
-      logMessageType = "log:thread-name";
+    case 'ThreadName':
+      logMessageType = 'log:thread-name';
       logMessageData = { name: m.name };
       break;
-    case "ParticipantsAddedToGroupThread":
-      logMessageType = "log:subscribe";
+    case 'ParticipantsAddedToGroupThread':
+      logMessageType = 'log:subscribe';
       logMessageData = { addedParticipants: m.addedParticipants };
       break;
-    case "ParticipantLeftGroupThread":
-      logMessageType = "log:unsubscribe";
+    case 'ParticipantLeftGroupThread':
+      logMessageType = 'log:unsubscribe';
       logMessageData = { leftParticipantFbId: m.leftParticipantFbId };
       break;
   }
 
   return {
-    type: "event",
+    type: 'event',
     threadID: formatID(
       (
         m.messageMetadata.threadKey.threadFbId ||
@@ -784,9 +793,9 @@ function formatTyp(event) {
     ),
     // When receiving typ indication from mobile, `from_mobile` isn't set.
     // If it is, we just use that value.
-    fromMobile: event.hasOwnProperty("from_mobile") ? event.from_mobile : true,
+    fromMobile: event.hasOwnProperty('from_mobile') ? event.from_mobile : true,
     userID: (event.realtime_viewer_fbid || event.from).toString(),
-    type: "typ"
+    type: 'typ'
   };
 }
 
@@ -799,7 +808,7 @@ function formatDeltaReadReceipt(delta) {
     threadID: formatID(
       (delta.threadKey.otherUserFbId || delta.threadKey.threadFbId).toString()
     ),
-    type: "read_receipt"
+    type: 'read_receipt'
   };
 }
 
@@ -808,7 +817,7 @@ function formatReadReceipt(event) {
     reader: event.reader.toString(),
     time: event.time,
     threadID: formatID((event.thread_fbid || event.reader).toString()),
-    type: "read_receipt"
+    type: 'read_receipt'
   };
 }
 
@@ -821,26 +830,28 @@ function formatRead(event) {
       ).toString()
     ),
     time: event.timestamp,
-    type: "read"
+    type: 'read'
   };
 }
 
 function getFrom(str, startToken, endToken) {
   var start = str.indexOf(startToken) + startToken.length;
-  if (start < startToken.length) return "";
+  if (start < startToken.length) {
+    return '';
+  }
 
   var lastHalf = str.substring(start);
   var end = lastHalf.indexOf(endToken);
   if (end === -1) {
     throw Error(
-      "Could not find endTime `" + endToken + "` in the given string."
+      'Could not find endTime `' + endToken + '` in the given string.'
     );
   }
   return lastHalf.substring(0, end);
 }
 
 function makeParsable(html) {
-  let withoutForLoop = html.replace(/for\s*\(\s*;\s*;\s*\)\s*;\s*/, "");
+  let withoutForLoop = html.replace(/for\s*\(\s*;\s*;\s*\)\s*;\s*/, '');
 
   // (What the fuck FB, why windows style newlines?)
   // So sometimes FB will send us base multiple objects in the same response.
@@ -852,37 +863,40 @@ function makeParsable(html) {
   // next object begins (issue #616)
   //       rav_kr - 2018-03-19
   let maybeMultipleObjects = withoutForLoop.split(/\}\r\n *\{/);
-  if (maybeMultipleObjects.length === 1) return maybeMultipleObjects;
+  if (maybeMultipleObjects.length === 1) {
+    return maybeMultipleObjects;
+  }
 
-  return "[" + maybeMultipleObjects.join("},{") + "]";
+  return '[' + maybeMultipleObjects.join('},{') + ']';
 }
 
 function arrToForm(form) {
   return arrayToObject(
     form,
-    function(v) {
+    function (v) {
       return v.name;
     },
-    function(v) {
+    function (v) {
       return v.val;
     }
   );
 }
 
 function arrayToObject(arr, getKey, getValue) {
-  return arr.reduce(function(acc, val) {
+  return arr.reduce(function (acc, val) {
     acc[getKey(val)] = getValue(val);
     return acc;
   }, {});
 }
 
 function getSignatureID() {
-  return Math.floor(Math.random() * 2147483648).toString(16);
+  return Math.floor(Math.random() * 2147483648)
+    .toString(16);
 }
 
 function generateTimestampRelative() {
   var d = new Date();
-  return d.getHours() + ":" + padZeros(d.getMinutes());
+  return d.getHours() + ':' + padZeros(d.getMinutes());
 }
 
 function makeDefaults(html, userID, ctx) {
@@ -904,11 +918,11 @@ function makeDefaults(html, userID, ctx) {
   //   siteData = {};
   // }
 
-  var ttstamp = "2";
+  var ttstamp = '2';
   for (var i = 0; i < fb_dtsg.length; i++) {
     ttstamp += fb_dtsg.charCodeAt(i);
   }
-  var revision = getFrom(html, 'revision":', ",");
+  var revision = getFrom(html, 'revision":', ',');
 
   function mergeWithDefaults(obj) {
     // @TODO This is missing a key called __dyn.
@@ -943,7 +957,9 @@ function makeDefaults(html, userID, ctx) {
     //   newObj[siteData.pkg_cohort_key] = siteData.pkg_cohort;
     // }
 
-    if (!obj) return newObj;
+    if (!obj) {
+      return newObj;
+    }
 
     for (var prop in obj) {
       if (obj.hasOwnProperty(prop)) {
@@ -970,7 +986,7 @@ function makeDefaults(html, userID, ctx) {
       jar,
       mergeWithDefaults(form),
       mergeWithDefaults(qs),
-      ctx.globalOptions 
+      ctx.globalOptions
     );
   }
 
@@ -985,185 +1001,205 @@ function parseAndCheckLogin(ctx, defaultFuncs, retryCount) {
   if (retryCount == undefined) {
     retryCount = 0;
   }
-  return function(data) {
-    return bluebird.try(function() {
-      log.verbose("parseAndCheckLogin", data.body);
-      if (data.statusCode >= 500 && data.statusCode < 600) {
-        if (retryCount >= 5) {
+  return function (data) {
+    return new Promise(function (resolve, reject) {
+      try {
+        log.verbose('parseAndCheckLogin', data.body);
+        if (data.statusCode >= 500 && data.statusCode < 600) {
+          if (retryCount >= 5) {
+            throw {
+              error:
+                'Request retry failed. Check the `res` and `statusCode` property on this error.',
+              statusCode: data.statusCode,
+              res: data.body
+            };
+          }
+          retryCount++;
+          var retryTime = Math.floor(Math.random() * 5000);
+          log.warn(
+            'parseAndCheckLogin',
+            'Got status code ' +
+            data.statusCode +
+            ' - ' +
+            retryCount +
+            '. attempt to retry in ' +
+            retryTime +
+            ' milliseconds...'
+          );
+          var url =
+            data.request.uri.protocol +
+            '//' +
+            data.request.uri.hostname +
+            data.request.uri.pathname;
+          if (
+            data.request.headers['Content-Type'].split(';')[0] ===
+            'multipart/form-data'
+          ) {
+            return Promise
+              .resolve()
+              .then(function () {
+                return new Promise(function (resolve) {
+                  setTimeout(function () {
+                    resolve();
+                  }, retryTime);
+                });
+              })
+              .then(function () {
+                return defaultFuncs.postFormData(
+                  url,
+                  ctx.jar,
+                  data.request.formData,
+                  {}
+                );
+              })
+              .then(parseAndCheckLogin(ctx, defaultFuncs, retryCount));
+          } else {
+            return Promise
+              .resolve()
+              .then(function () {
+                return new Promise(function (resolve) {
+                  setTimeout(function () {
+                    resolve();
+                  }, retryTime);
+                });
+              })
+              .then(function () {
+                return defaultFuncs.post(url, ctx.jar, data.request.formData);
+              })
+              .then(parseAndCheckLogin(ctx, defaultFuncs, retryCount));
+          }
+        }
+        if (data.statusCode !== 200) {
+          throw new Error(
+            'parseAndCheckLogin got status code: ' +
+            data.statusCode +
+            '. Bailing out of trying to parse response.'
+          );
+        }
+
+        var res = null;
+        try {
+          res = JSON.parse(makeParsable(data.body));
+        } catch (e) {
           throw {
-            error:
-              "Request retry failed. Check the `res` and `statusCode` property on this error.",
-            statusCode: data.statusCode,
+            error: 'JSON.parse error. Check the `detail` property on this error.',
+            detail: e,
             res: data.body
           };
         }
-        retryCount++;
-        var retryTime = Math.floor(Math.random() * 5000);
-        log.warn(
-          "parseAndCheckLogin",
-          "Got status code " +
-            data.statusCode +
-            " - " +
-            retryCount +
-            ". attempt to retry in " +
-            retryTime +
-            " milliseconds..."
-        );
-        var url =
-          data.request.uri.protocol +
-          "//" +
-          data.request.uri.hostname +
-          data.request.uri.pathname;
-        if (
-          data.request.headers["Content-Type"].split(";")[0] ===
-          "multipart/form-data"
-        ) {
-          return bluebird
-            .delay(retryTime)
-            .then(function() {
-              return defaultFuncs.postFormData(
-                url,
-                ctx.jar,
-                data.request.formData,
-                {}
-              );
-            })
-            .then(parseAndCheckLogin(ctx, defaultFuncs, retryCount));
-        } else {
-          return bluebird
-            .delay(retryTime)
-            .then(function() {
-              return defaultFuncs.post(url, ctx.jar, data.request.formData);
-            })
-            .then(parseAndCheckLogin(ctx, defaultFuncs, retryCount));
+
+        // In some cases the response contains only a redirect URL which should be followed
+        if (res.redirect && data.request.method === 'GET') {
+          return defaultFuncs
+            .get(res.redirect, ctx.jar)
+            .then(parseAndCheckLogin(ctx, defaultFuncs));
         }
-      }
-      if (data.statusCode !== 200)
-        throw new Error(
-          "parseAndCheckLogin got status code: " +
-            data.statusCode +
-            ". Bailing out of trying to parse response."
-        );
 
-      var res = null;
-      try {
-        res = JSON.parse(makeParsable(data.body));
-      } catch (e) {
-        throw {
-          error: "JSON.parse error. Check the `detail` property on this error.",
-          detail: e,
-          res: data.body
-        };
-      }
+        // TODO: handle multiple cookies?
+        if (
+          res.jsmods &&
+          res.jsmods.require &&
+          Array.isArray(res.jsmods.require[0]) &&
+          res.jsmods.require[0][0] === 'Cookie'
+        ) {
+          res.jsmods.require[0][3][0] = res.jsmods.require[0][3][0].replace(
+            '_js_',
+            ''
+          );
+          var cookie = formatCookie(res.jsmods.require[0][3], 'facebook');
+          var cookie2 = formatCookie(res.jsmods.require[0][3], 'messenger');
+          ctx.jar.setCookie(cookie, 'https://www.facebook.com');
+          ctx.jar.setCookie(cookie2, 'https://www.messenger.com');
+        }
 
-      // In some cases the response contains only a redirect URL which should be followed
-      if (res.redirect && data.request.method === "GET") {
-        return defaultFuncs
-          .get(res.redirect, ctx.jar)
-          .then(parseAndCheckLogin(ctx, defaultFuncs));
-      }
+        // On every request we check if we got a DTSG and we mutate the context so that we use the latest
+        // one for the next requests.
+        if (res.jsmods && Array.isArray(res.jsmods.require)) {
+          var arr = res.jsmods.require;
+          for (var i in arr) {
+            if (arr[i][0] === 'DTSG' && arr[i][1] === 'setToken') {
+              ctx.fb_dtsg = arr[i][3][0];
 
-      // TODO: handle multiple cookies?
-      if (
-        res.jsmods &&
-        res.jsmods.require &&
-        Array.isArray(res.jsmods.require[0]) &&
-        res.jsmods.require[0][0] === "Cookie"
-      ) {
-        res.jsmods.require[0][3][0] = res.jsmods.require[0][3][0].replace(
-          "_js_",
-          ""
-        );
-        var cookie = formatCookie(res.jsmods.require[0][3], "facebook");
-        var cookie2 = formatCookie(res.jsmods.require[0][3], "messenger");
-        ctx.jar.setCookie(cookie, "https://www.facebook.com");
-        ctx.jar.setCookie(cookie2, "https://www.messenger.com");
-      }
-
-      // On every request we check if we got a DTSG and we mutate the context so that we use the latest
-      // one for the next requests.
-      if (res.jsmods && Array.isArray(res.jsmods.require)) {
-        var arr = res.jsmods.require;
-        for (var i in arr) {
-          if (arr[i][0] === "DTSG" && arr[i][1] === "setToken") {
-            ctx.fb_dtsg = arr[i][3][0];
-
-            // Update ttstamp since that depends on fb_dtsg
-            ctx.ttstamp = "2";
-            for (var j = 0; j < ctx.fb_dtsg.length; j++) {
-              ctx.ttstamp += ctx.fb_dtsg.charCodeAt(j);
+              // Update ttstamp since that depends on fb_dtsg
+              ctx.ttstamp = '2';
+              for (var j = 0; j < ctx.fb_dtsg.length; j++) {
+                ctx.ttstamp += ctx.fb_dtsg.charCodeAt(j);
+              }
             }
           }
         }
-      }
 
-      if (res.error === 1357001) {
-        throw { error: "Not logged in." };
+        if (res.error === 1357001) {
+          throw { error: 'Not logged in.' };
+        }
+        return res;
+      } catch (error) {
+        reject(error);
       }
-      return res;
     });
   };
 }
 
 function saveCookies(jar) {
-  return function(res) {
-    var cookies = res.headers["set-cookie"] || [];
-    cookies.forEach(function(c) {
-      if (c.indexOf(".facebook.com") > -1) {
-        jar.setCookie(c, "https://www.facebook.com");
+  return function (res) {
+    var cookies = res.headers['set-cookie'] || [];
+    cookies.forEach(function (c) {
+      if (c.indexOf('.facebook.com') > -1) {
+        jar.setCookie(c, 'https://www.facebook.com');
       }
-      var c2 = c.replace(/domain=\.facebook\.com/, "domain=.messenger.com");
-      jar.setCookie(c2, "https://www.messenger.com");
+      var c2 = c.replace(/domain=\.facebook\.com/, 'domain=.messenger.com');
+      jar.setCookie(c2, 'https://www.messenger.com');
     });
     return res;
   };
 }
 
 var NUM_TO_MONTH = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec"
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec'
 ];
-var NUM_TO_DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+var NUM_TO_DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 function formatDate(date) {
   var d = date.getUTCDate();
-  d = d >= 10 ? d : "0" + d;
+  d = d >= 10 ? d : '0' + d;
   var h = date.getUTCHours();
-  h = h >= 10 ? h : "0" + h;
+  h = h >= 10 ? h : '0' + h;
   var m = date.getUTCMinutes();
-  m = m >= 10 ? m : "0" + m;
+  m = m >= 10 ? m : '0' + m;
   var s = date.getUTCSeconds();
-  s = s >= 10 ? s : "0" + s;
+  s = s >= 10 ? s : '0' + s;
   return (
     NUM_TO_DAY[date.getUTCDay()] +
-    ", " +
+    ', ' +
     d +
-    " " +
+    ' ' +
     NUM_TO_MONTH[date.getUTCMonth()] +
-    " " +
+    ' ' +
     date.getUTCFullYear() +
-    " " +
+    ' ' +
     h +
-    ":" +
+    ':' +
     m +
-    ":" +
+    ':' +
     s +
-    " GMT"
+    ' GMT'
   );
 }
 
 function formatCookie(arr, url) {
   return (
-    arr[0] + "=" + arr[1] + "; Path=" + arr[3] + "; Domain=" + url + ".com"
+    arr[0] + '=' + arr[1] + '; Path=' + arr[3] + '; Domain=' + url + '.com'
   );
 }
 
@@ -1176,7 +1212,7 @@ function formatThread(data) {
     nicknames: data.custom_nickname,
     snippet: data.snippet,
     snippetAttachments: data.snippet_attachments,
-    snippetSender: formatID((data.snippet_sender || "").toString()),
+    snippetSender: formatID((data.snippet_sender || '').toString()),
     unreadCount: data.unread_count,
     messageCount: data.message_count,
     imageSrc: data.image_src,
@@ -1204,13 +1240,16 @@ function formatThread(data) {
 }
 
 function getType(obj) {
-  return Object.prototype.toString.call(obj).slice(8, -1);
+  return Object.prototype.toString.call(obj)
+    .slice(8, -1);
 }
 
 function formatProxyPresence(presence, userID) {
-  if (presence.lat === undefined || presence.p === undefined) return null;
+  if (presence.lat === undefined || presence.p === undefined) {
+    return null;
+  }
   return {
-    type: "presence",
+    type: 'presence',
     timestamp: presence.lat * 1000,
     userID: userID,
     statuses: presence.p
@@ -1219,7 +1258,7 @@ function formatProxyPresence(presence, userID) {
 
 function formatPresence(presence, userID) {
   return {
-    type: "presence",
+    type: 'presence',
     timestamp: presence.la * 1000,
     userID: userID,
     statuses: presence.a
@@ -1228,17 +1267,18 @@ function formatPresence(presence, userID) {
 
 function decodeClientPayload(payload) {
   /*
-  Special function which Client using to "encode" clients JSON payload
-  */
+   Special function which Client using to "encode" clients JSON payload
+   */
   return JSON.parse(String.fromCharCode.apply(null, payload));
 }
 
 function getAppState(jar) {
   return jar
-    .getCookies("https://www.facebook.com")
-    .concat(jar.getCookies("https://facebook.com"))
-    .concat(jar.getCookies("https://www.messenger.com"));
+    .getCookies('https://www.facebook.com')
+    .concat(jar.getCookies('https://facebook.com'))
+    .concat(jar.getCookies('https://www.messenger.com'));
 }
+
 module.exports = {
   isReadableStream,
   get,
