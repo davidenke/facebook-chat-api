@@ -75,54 +75,48 @@ function buildAPI(globalOptions, html, jar) {
     },
   };
 
-  const apiFuncNames = [
-    'addUserToGroup',
-    'changeAdminStatus',
-    'changeArchivedStatus',
-    'changeBlockedStatus',
-    'changeGroupImage',
-    'changeNickname',
-    'changeThreadColor',
-    'changeThreadEmoji',
-    'createPoll',
-    'deleteMessage',
-    'deleteThread',
-    'forwardAttachment',
-    'getCurrentUserID',
-    'getEmojiUrl',
-    'getFriendsList',
-    'getThreadHistory',
-    'getThreadInfo',
-    'getThreadList',
-    'getThreadPictures',
-    'getUserID',
-    'getUserInfo',
-    'handleMessageRequest',
-    'listen',
-    'logout',
-    'markAsRead',
-    'muteThread',
-    'removeUserFromGroup',
-    'resolvePhotoUrl',
-    'searchForThread',
-    'sendMessage',
-    'sendTypingIndicator',
-    'setMessageReaction',
-    'setTitle',
-    'threadColors',
-
-    // Deprecated features
-    "getThreadListDeprecated",
-    'getThreadHistoryDeprecated',
-    'getThreadInfoDeprecated',
-  ];
-
   var defaultFuncs = utils.makeDefaults(html, userID, ctx);
 
-  // Load all api functions in a loop
-  apiFuncNames.map(function(v) {
-    api[v] = require('./src/' + v)(defaultFuncs, api, ctx);
-  });
+  // Load all api functions sequentially
+  api.addUserToGroup = require('./src/addUserToGroup')(defaultFuncs, api, ctx);
+  api.changeAdminStatus = require('./src/changeAdminStatus')(defaultFuncs, api, ctx);
+  api.changeArchivedStatus = require('./src/changeArchivedStatus')(defaultFuncs, api, ctx);
+  api.changeBlockedStatus = require('./src/changeBlockedStatus')(defaultFuncs, api, ctx);
+  api.changeGroupImage = require('./src/changeGroupImage')(defaultFuncs, api, ctx);
+  api.changeNickname = require('./src/changeNickname')(defaultFuncs, api, ctx);
+  api.changeThreadColor = require('./src/changeThreadColor')(defaultFuncs, api, ctx);
+  api.changeThreadEmoji = require('./src/changeThreadEmoji')(defaultFuncs, api, ctx);
+  api.createPoll = require('./src/createPoll')(defaultFuncs, api, ctx);
+  api.deleteMessage = require('./src/deleteMessage')(defaultFuncs, api, ctx);
+  api.deleteThread = require('./src/deleteThread')(defaultFuncs, api, ctx);
+  api.forwardAttachment = require('./src/forwardAttachment')(defaultFuncs, api, ctx);
+  api.getCurrentUserID = require('./src/getCurrentUserID')(defaultFuncs, api, ctx);
+  api.getEmojiUrl = require('./src/getEmojiUrl')(defaultFuncs, api, ctx);
+  api.getFriendsList = require('./src/getFriendsList')(defaultFuncs, api, ctx);
+  api.getThreadHistory = require('./src/getThreadHistory')(defaultFuncs, api, ctx);
+  api.getThreadInfo = require('./src/getThreadInfo')(defaultFuncs, api, ctx);
+  api.getThreadList = require('./src/getThreadList')(defaultFuncs, api, ctx);
+  api.getThreadPictures = require('./src/getThreadPictures')(defaultFuncs, api, ctx);
+  api.getUserID = require('./src/getUserID')(defaultFuncs, api, ctx);
+  api.getUserInfo = require('./src/getUserInfo')(defaultFuncs, api, ctx);
+  api.handleMessageRequest = require('./src/handleMessageRequest')(defaultFuncs, api, ctx);
+  api.listen = require('./src/listen')(defaultFuncs, api, ctx);
+  api.logout = require('./src/logout')(defaultFuncs, api, ctx);
+  api.markAsRead = require('./src/markAsRead')(defaultFuncs, api, ctx);
+  api.muteThread = require('./src/muteThread')(defaultFuncs, api, ctx);
+  api.removeUserFromGroup = require('./src/removeUserFromGroup')(defaultFuncs, api, ctx);
+  api.resolvePhotoUrl = require('./src/resolvePhotoUrl')(defaultFuncs, api, ctx);
+  api.searchForThread = require('./src/searchForThread')(defaultFuncs, api, ctx);
+  api.sendMessage = require('./src/sendMessage')(defaultFuncs, api, ctx);
+  api.sendTypingIndicator = require('./src/sendTypingIndicator')(defaultFuncs, api, ctx);
+  api.setMessageReaction = require('./src/setMessageReaction')(defaultFuncs, api, ctx);
+  api.setTitle = require('./src/setTitle')(defaultFuncs, api, ctx);
+  api.threadColors = require('./src/threadColors')(defaultFuncs, api, ctx);
+
+  // Deprecated features
+  api.getThreadListDeprecated = require('./src/getThreadListDeprecated')(defaultFuncs, api, ctx);
+  api.getThreadHistoryDeprecated = require('./src/getThreadHistoryDeprecated')(defaultFuncs, api, ctx);
+  api.getThreadInfoDeprecated = require('./src/getThreadInfoDeprecated')(defaultFuncs, api, ctx);
 
   return [ctx, defaultFuncs, api];
 }
