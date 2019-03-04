@@ -1,16 +1,17 @@
 'use strict';
 
 var util = require('util');
-var request = util.promisify(require('request')
-  .defaults({ jar: true }));
+var request = util.promisify(require('request').defaults({ jar: true }));
 var stream = require('stream');
 var log = require('npmlog');
+
 
 function getHeaders(url, options) {
   var headers = {
     'Content-Type': 'application/x-www-form-urlencoded',
     Referer: 'https://www.facebook.com/',
-    Host: url.replace('https://', '')
+    Host: url
+      .replace('https://', '')
       .split('/')[0],
     Origin: 'https://www.facebook.com',
     'User-Agent': options.userAgent,
@@ -48,10 +49,7 @@ function get(url, jar, qs, options) {
     gzip: true
   };
 
-  return request(op)
-    .then(function (res) {
-      return res[0];
-    });
+  return request(op);
 }
 
 function post(url, jar, form, options) {
@@ -65,10 +63,7 @@ function post(url, jar, form, options) {
     gzip: true
   };
 
-  return request(op)
-    .then(function (res) {
-      return res[0];
-    });
+  return request(op);
 }
 
 function postFormData(url, jar, form, qs, options) {
@@ -85,10 +80,7 @@ function postFormData(url, jar, form, qs, options) {
     gzip: true
   };
 
-  return request(op)
-    .then(function (res) {
-      return res[0];
-    });
+  return request(op);
 }
 
 function padZeros(val, len) {
