@@ -1124,6 +1124,8 @@ function parseAndCheckLogin(ctx, defaultFuncs, retryCount) {
         if (res.error === 1357001) {
           throw { error: 'Not logged in.' };
         }
+
+        resolve(res);
         return res;
       } catch (error) {
         reject(error);
